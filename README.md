@@ -13,8 +13,10 @@ You give it design screenshots, it tells your code to match them — pixel by pi
 Open a terminal and run:
 
 ```bash
-git clone https://github.com/<your-org>/frontend-audit ~/.claude/skills/frontend-audit
+git clone https://github.com/colbymchenry/frontend-audit-skill.git ~/.claude/skills/frontend-audit
 ```
+
+Note the target directory name is `frontend-audit` (without the `-skill` suffix). This matches the skill's internal name so Claude Code can find it.
 
 That's it. The skill is now available in every Claude Code session, in every project.
 
