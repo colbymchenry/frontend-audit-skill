@@ -22,7 +22,7 @@ That's it. The skill is now available in every Claude Code session, in every pro
 
 ### Step 2 — Drop your designs into a folder
 
-In your project, make a folder called `design/`. Put PNG screenshots of your designs in it. **Give each one a clear name** that describes what page or section it represents:
+In your project, make a folder called `design/`. Put screenshots of your designs in it. **Give each one a clear name** that describes what page or section it represents:
 
 ```
 your-project/
@@ -34,6 +34,8 @@ your-project/
 │   └── pricing.png
 └── (rest of your code)
 ```
+
+**PNG is strongly preferred** because it's lossless — the audit measures pixel colors exactly. JPEG works too (`.jpg` / `.jpeg`), but JPEG's compression introduces tiny color shifts around edges that can trip a few false-positive results in the cluster sampler. If you have a choice, export as PNG.
 
 Tip: Export these from Figma, Photoshop, or whatever design tool you use. They should be the SAME size and layout as what you want the real page to look like.
 

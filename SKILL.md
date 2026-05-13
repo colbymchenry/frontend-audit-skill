@@ -39,7 +39,7 @@ Call AskUserQuestion **exactly once with all three of these questions in the sam
 
 ### Step B — install JS dependencies
 
-On `Yes` to install: run `bun add -d pngjs playwright && bunx playwright install chromium` (substituting the detected package manager). On `Skip`: tell the user they'll need to install before continuing and stop.
+On `Yes` to install: run `bun add -d pngjs jpeg-js playwright && bunx playwright install chromium` (substituting the detected package manager — `pngjs` decodes PNG, `jpeg-js` decodes JPEG so the user can drop either format into `design/`). On `Skip`: tell the user they'll need to install before continuing and stop.
 
 ### Step C — check for Python and offer to install if missing
 

@@ -71,17 +71,31 @@ function regionsPathFor(pngPath) {
 	return path.join(dir, `${stem}.regions.json`);
 }
 
+const IMAGE_EXTS = [".png", ".jpg", ".jpeg"];
 const pngs = fs
 	.readdirSync(designDir)
-	.filter(name => name.toLowerCase().endsWith(".png"))
+	.filter(name => IMAGE_EXTS.includes(path.extname(name).toLowerCase()))
 	.map(name => path.join(designDir, name));
 
 if (pngs.length === 0) {
-	console.log(`No PNGs found in ${designDir}/`);
+	console.log(`No images found in ${designDir}/ (looked for .png, .jpg, .jpeg)`);
 	process.exit(0);
 }
 
-console.log(`\nScanning ${designDir}/ — ${pngs.length} PNG(s)\n`);
+// PNG-leaning copy: prefer PNG, but JPEG is supported. JPEG's lossy
+// compression introduces noise the audit reads as low-confidence
+// cluster signatures near edges — re-export as PNG if precision matters.
+const jpegCount = pngs.filter(p => p.toLowerCase().match(/\.jpe?g$/)).length;
+console.log(`\nScanning ${designDir}/ — ${pngs.length} image(s)`);
+if (jpegCount > 0) {
+	console.log(
+		`(${jpegCount} JPEG file(s) detected — PNG is preferred for lossless ` +
+			`sampling; the audit still works on JPEG but tolerances were tuned ` +
+			`against PNG inputs)\n`
+	);
+} else {
+	console.log("");
+}
 const HEADER =
 	"Image".padEnd(40) + "Status".padEnd(14) + "Regions file";
 console.log(HEADER);

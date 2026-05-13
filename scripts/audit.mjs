@@ -72,6 +72,7 @@ import { PNG } from "pngjs";
 import { chromium } from "playwright";
 import fs from "node:fs";
 import path from "node:path";
+import { readImage } from "./_imageio.mjs";
 import {
 	buildEdgeMap,
 	resizePng,
@@ -154,9 +155,11 @@ const regions = Object.fromEntries(
 // PNG sampling primitives (shared with sample-colors.mjs / inspect-shape.mjs)
 // ────────────────────────────────────────────────────────────────────────────
 
+// Image reading is delegated to _imageio.mjs which routes PNG → pngjs,
+// JPEG → jpeg-js (decoded to the same RGBA buffer shape). The function
+// name stays `readPng` for blame continuity but it handles both formats.
 function readPng(p) {
-	const buf = fs.readFileSync(path.resolve(p));
-	return PNG.sync.read(buf);
+	return readImage(p);
 }
 
 function regionPixels(png, frac) {

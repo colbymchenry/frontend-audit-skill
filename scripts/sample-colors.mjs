@@ -27,6 +27,7 @@
 import { PNG } from "pngjs";
 import fs from "node:fs";
 import path from "node:path";
+import { readImage } from "./_imageio.mjs";
 
 const args = process.argv.slice(2);
 const goalPath = args.find(a => !a.startsWith("--"));
@@ -64,8 +65,7 @@ if (!fs.existsSync(regionsPath)) {
 }
 
 const regions = JSON.parse(fs.readFileSync(regionsPath, "utf8"));
-const buf = fs.readFileSync(path.resolve(goalPath));
-const png = PNG.sync.read(buf);
+const png = readImage(goalPath);
 const { width, height, data } = png;
 
 function regionPixels({ x, y, w, h }) {

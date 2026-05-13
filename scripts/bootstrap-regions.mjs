@@ -75,6 +75,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { PNG } from "pngjs";
+import { readImage } from "./_imageio.mjs";
 import {
 	buildEdgeMap,
 	connectedComponents,
@@ -430,7 +431,7 @@ function runProgrammatic() {
 	console.error(
 		`[programmatic] reading ${path.relative(process.cwd(), imagePath)} (Sobel + CCL, no Python required)…`
 	);
-	const png = PNG.sync.read(fs.readFileSync(path.resolve(imagePath)));
+	const png = readImage(imagePath);
 	const W = png.width;
 	const H = png.height;
 	const totalArea = W * H;
@@ -579,8 +580,7 @@ for (const el of sortedElements) {
 // whole-region (compound-bg) and per-sub-region (single-fill) coverage.
 // ────────────────────────────────────────────────────────────────────────────
 
-const pngBuf = fs.readFileSync(parsed.image.path ?? imagePath);
-const seamPng = PNG.sync.read(pngBuf);
+const seamPng = readImage(parsed.image.path ?? imagePath);
 const seamedRegions = augmentWithSubRegions(regions, seamPng);
 
 // ────────────────────────────────────────────────────────────────────────────

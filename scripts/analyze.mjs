@@ -80,6 +80,7 @@
 import { PNG } from "pngjs";
 import fs from "node:fs";
 import path from "node:path";
+import { readImage } from "./_imageio.mjs";
 import {
 	buildEdgeMap,
 	resizePng,
@@ -142,7 +143,7 @@ const regions = fs.existsSync(regionsPath)
 // ────────────────────────────────────────────────────────────────────────────
 
 function readPng(p) {
-	return PNG.sync.read(fs.readFileSync(path.resolve(p)));
+	return readImage(p);
 }
 
 // Image-analysis primitives (toGrayscale / sobel / dilate / IoU /
