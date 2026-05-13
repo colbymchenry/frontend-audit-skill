@@ -268,11 +268,45 @@ const argMap = Object.fromEntries(
 		})
 );
 
+// `--setup-only` lets the skill provision OmniParser eagerly during
+// first-time bootstrap (right after the user runs /frontend-audit) so
+// the dependency install isn't deferred to the first PNG. Reuses the
+// ensureOmniParserVenv path below; no PNG required.
+if (argMap["setup-only"] === true) {
+	const sysPy = detectSystemPython();
+	if (!sysPy) {
+		console.error(
+			"[setup] no system python3 found. Install Python 3.10+ first " +
+				"(macOS: `brew install python@3.12`; Debian/Ubuntu: " +
+				"`sudo apt install python3.12 python3.12-venv`; Fedora: " +
+				"`sudo dnf install python3.12`; Windows: " +
+				"https://www.python.org/downloads/). Then re-run with --setup-only."
+		);
+		process.exit(3);
+	}
+	console.error(`[setup] system python: ${sysPy}`);
+	const result = ensureOmniParserVenv();
+	if (!result.ok) {
+		console.error(
+			`[setup] failed: ${result.reason}${result.detail ? ` — ${result.detail}` : ""}`
+		);
+		process.exit(4);
+	}
+	console.error("[setup] OmniParser venv ready. Drop a PNG into design/ and re-run /frontend-audit.");
+	process.exit(0);
+}
+
 const imagePath = argMap.image;
 if (!imagePath || !fs.existsSync(imagePath)) {
 	console.error("Missing or invalid --image=<png>");
 	console.error(
 		`Example: bun ${path.relative(process.cwd(), __filename)} --image=design/dashboard.png`
+	);
+	console.error(
+		`Setup-only mode (provisions OmniParser venv without a PNG):`
+	);
+	console.error(
+		`  bun ${path.relative(process.cwd(), __filename)} --setup-only`
 	);
 	process.exit(2);
 }

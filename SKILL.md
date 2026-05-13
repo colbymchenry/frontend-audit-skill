@@ -27,15 +27,55 @@ Check whether the current working directory has `.frontend-audit.json`:
 test -f .frontend-audit.json && echo "configured" || echo "needs-bootstrap"
 ```
 
-**If `needs-bootstrap`:** call AskUserQuestion **exactly once with all three of these questions in the same call** — don't infer answers from the project layout, the user wants the choice:
+**If `needs-bootstrap`:** the whole setup runs eagerly in one shot — the user types `/frontend-audit` once and Claude provisions every dependency. The user should not have to think about Python, OmniParser, Playwright, or any other internal tool.
+
+### Step A — gather config (one AskUserQuestion call, three questions)
+
+Call AskUserQuestion **exactly once with all three of these questions in the same call** — don't infer answers from the project layout, the user wants the choice:
 
 1. **Dev server URL** — first option `http://localhost:3000` labelled `(Recommended)`, with `Other` available for custom values.
-2. **Goal-image directory** — first option `design/` labelled `(Recommended)`. Offer `design/`, `mocks/`, `screenshots/` as quick options. The user picks where their PNGs live; do NOT auto-detect this even if `design/` already exists in the project. Asking is the contract.
-3. **Install dependencies now?** — first option `Yes, install with <pkg-manager>` labelled `(Recommended)`. Detect the lockfile (`bun.lock` → bun, `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, else npm) for the label. On `Yes`, run e.g. `bun add -d pngjs playwright && bunx playwright install chromium`. On `Skip`, tell the user they'll need to install before running the workflow.
+2. **Goal-image directory** — first option `design/` labelled `(Recommended)`. Offer `design/`, `mocks/`, `screenshots/` as quick options.
+3. **Install everything now?** — first option `Yes, install with <pkg-manager>` labelled `(Recommended)`. Detect the lockfile (`bun.lock` → bun, `pnpm-lock.yaml` → pnpm, `yarn.lock` → yarn, else npm). Mention that "install everything" means JS deps (pngjs, playwright, chromium) **and** the OmniParser ML region detector — about 3GB on disk one-time.
 
-All three questions must appear in the same AskUserQuestion call — that's one prompt, three choices, not three sequential prompts.
+### Step B — install JS dependencies
 
-Write the answers to `.frontend-audit.json`:
+On `Yes` to install: run `bun add -d pngjs playwright && bunx playwright install chromium` (substituting the detected package manager). On `Skip`: tell the user they'll need to install before continuing and stop.
+
+### Step C — check for Python and offer to install if missing
+
+OmniParser (the ML region detector) requires Python 3.10+. Run:
+
+```bash
+command -v python3 >/dev/null 2>&1 && python3 --version
+```
+
+If absent OR the reported version is `< 3.10`:
+
+- Call AskUserQuestion: "Python 3.10+ isn't installed. Install it now? (recommended; needed for high-quality region detection — without it, the skill falls back to a simpler edge-detection mode that still works but produces less semantic region names)."
+- Quick options: `Yes, install Python` (recommended), `Skip — use the no-Python fallback`.
+- On `Yes`: detect OS and run the right command:
+  - macOS with brew: `brew install python@3.12`
+  - macOS without brew: ask the user to install brew first, or fall back to the python.org installer link
+  - Linux Debian/Ubuntu: `sudo apt install -y python3.12 python3.12-venv`
+  - Linux Fedora/RHEL: `sudo dnf install -y python3.12`
+  - Windows: send the user to `https://www.python.org/downloads/` (Claude can't reliably install Python on Windows from CLI)
+- On `Skip`: set `_skipOmniParser: true` in the config so Step D doesn't run, and inform the user that future PNG region authoring will use the `--programmatic` (Sobel + CCL) path.
+
+### Step D — provision OmniParser eagerly
+
+If Python is available and the user didn't skip:
+
+```bash
+bun ~/.claude/skills/frontend-audit/scripts/bootstrap-regions.mjs --setup-only
+```
+
+This creates the Python venv at `~/.claude/skills/frontend-audit/.venv/` and installs OmniParser's full dep stack (transformers, torch, ultralytics, easyocr, etc.) and triggers the model-weight download. Total ~3GB on disk, one-time. The script prints progress; relay it to the user so they know it's working.
+
+On failure (e.g. pip download blocked, disk full): tell the user the error and offer to retry, OR fall back to `--programmatic` mode for region authoring.
+
+### Step E — write the config and confirm
+
+Write `.frontend-audit.json`:
 
 ```json
 {
@@ -44,9 +84,11 @@ Write the answers to `.frontend-audit.json`:
 }
 ```
 
-Then add `design/_debug/` to `.gitignore` (idempotent) and tell the user the project is configured. **Do not** drop a `regions.json` — regions are per-PNG and the assistant generates them in Step 0 below.
+Add `design/_debug/` to `.gitignore` (idempotent). Tell the user setup is complete and they can now drop PNGs into `design/` and re-run `/frontend-audit` to start auditing.
 
-**If `configured`:** read `.frontend-audit.json` so subsequent script invocations use the project's URL and paths.
+**Do not** drop a `regions.json` — regions are per-PNG and the assistant generates them in Step 0 below.
+
+**If `configured`:** read `.frontend-audit.json` so subsequent script invocations use the project's URL and paths. Skip bootstrap entirely.
 
 ## The workflow (run in order, every iteration)
 

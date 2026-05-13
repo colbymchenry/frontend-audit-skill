@@ -49,18 +49,26 @@ In Claude Code, just type:
 /frontend-audit
 ```
 
-The first time you run it, Claude will ask you 2–3 short questions (your dev server URL, your design folder location, whether to install some dependencies). Answer them once and they're saved.
+The first time you run it, Claude handles everything:
 
-From there, Claude will:
+- Asks 3 short questions (dev server URL, design folder location, "install everything now?")
+- Installs the JS dependencies (Playwright, pngjs, headless Chromium) into your project
+- Checks whether Python 3.10+ is on your system — if not, offers to install it for you (Homebrew on macOS, apt on Linux, or a link to the installer on Windows)
+- Sets up the ML region detector (OmniParser) with its model weights — ~3GB, one-time
+- Saves your config so this never has to happen again
 
-1. Look at every PNG in your `design/` folder
-2. Open your live website in a hidden browser
-3. Compare each design to the matching live page
-4. Tell you EXACTLY what's different — wrong colors, missing borders, incorrect spacing, etc.
-5. Fix the CSS for you, one issue at a time
-6. Re-check until your live site matches the designs
+After that first setup, Claude:
+
+1. Looks at every PNG in your `design/` folder
+2. Opens your live website in a hidden browser
+3. Compares each design to the matching live page
+4. Tells you EXACTLY what's different — wrong colors, missing borders, incorrect spacing, etc.
+5. Fixes the CSS for you, one issue at a time
+6. Re-checks until your live site matches the designs
 
 You're done when Claude tells you the audit passed.
+
+The whole point: **you type `/frontend-audit` and nothing else.** No bash commands, no package manager incantations, no Python version juggling.
 
 ### What "passing" means
 
