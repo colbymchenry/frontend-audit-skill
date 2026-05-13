@@ -35,6 +35,22 @@ your-project/
 └── (rest of your code)
 ```
 
+**Subfolders are fine** if you want a bit of organization — name them however your project's surfaces are structured (`pages/`, `components/`, `flows/`, anything you like). The audit walks `design/` recursively:
+
+```
+your-project/
+├── design/
+│   ├── pages/
+│   │   ├── home.png
+│   │   └── account/
+│   │       └── profile.png
+│   └── components/
+│       └── membership-card.png
+└── (rest of your code)
+```
+
+Whether you go flat or nested is up to you — there's no enforced structure. For projects with a handful of PNGs the flat layout is faster to scan; nest once you've got a dozen or more.
+
 **PNG is strongly preferred** because it's lossless — the audit measures pixel colors exactly. JPEG works too (`.jpg` / `.jpeg`), but JPEG's compression introduces tiny color shifts around edges that can trip a few false-positive results in the cluster sampler. If you have a choice, export as PNG.
 
 Tip: Export these from Figma, Photoshop, or whatever design tool you use. They should be the SAME size and layout as what you want the real page to look like.
@@ -171,7 +187,7 @@ The audit resolves locators via Playwright's locator engine (`page.getByRole`, `
 
 ### The regions file
 
-Per-PNG sidecar at `design/<name>.regions.json`:
+Per-PNG sidecar living alongside the image (`design/<name>.regions.json`, or `design/<subdir>/<name>.regions.json` when the PNG is nested — `discover.mjs` walks `design/` recursively and skips `_debug/` plus dot-prefixed dirs):
 
 ```json
 {

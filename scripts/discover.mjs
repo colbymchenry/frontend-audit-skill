@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 /**
- * Walk the design directory, hash each goal PNG, and report whether
- * its sibling regions file is in sync with the current image content.
+ * Walk the design directory recursively, hash each goal image, and
+ * report whether its sibling regions file is in sync with the current
+ * image content. Subfolders are supported for organization (e.g.
+ * design/dashboard/foo.png, design/account/bar.png); _debug/ and dot-
+ * prefixed dirs are skipped.
  *
  * Three states per PNG:
  *
@@ -72,10 +75,30 @@ function regionsPathFor(pngPath) {
 }
 
 const IMAGE_EXTS = [".png", ".jpg", ".jpeg"];
-const pngs = fs
-	.readdirSync(designDir)
-	.filter(name => IMAGE_EXTS.includes(path.extname(name).toLowerCase()))
-	.map(name => path.join(designDir, name));
+
+// Walk the design dir recursively so users can organize PNGs into
+// subfolders (e.g. design/dashboard/foo.png, design/account/bar.png).
+// _debug/ is skipped — it's the snap/diff scratch dir and never holds
+// goal images. Other dotfile-prefixed dirs are skipped for the same
+// reason (build/cache scratch).
+function walkImages(dir) {
+	const out = [];
+	for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+		const full = path.join(dir, entry.name);
+		if (entry.isDirectory()) {
+			if (entry.name === "_debug" || entry.name.startsWith(".")) continue;
+			out.push(...walkImages(full));
+		} else if (
+			entry.isFile() &&
+			IMAGE_EXTS.includes(path.extname(entry.name).toLowerCase())
+		) {
+			out.push(full);
+		}
+	}
+	return out;
+}
+
+const pngs = walkImages(designDir).sort();
 
 if (pngs.length === 0) {
 	console.log(`No images found in ${designDir}/ (looked for .png, .jpg, .jpeg)`);
@@ -96,18 +119,24 @@ if (jpegCount > 0) {
 } else {
 	console.log("");
 }
+// Image column shows the path relative to designDir so nested
+// folders are obvious at a glance (e.g. "dashboard/recent-orders.png").
+const relImages = pngs.map(p => path.relative(designDir, p));
+const imageColWidth = Math.max(40, ...relImages.map(s => s.length + 2));
 const HEADER =
-	"Image".padEnd(40) + "Status".padEnd(14) + "Regions file";
+	"Image".padEnd(imageColWidth) + "Status".padEnd(14) + "Regions file";
 console.log(HEADER);
 console.log("-".repeat(HEADER.length + 20));
 
 let nonFreshCount = 0;
 let stampedCount = 0;
 
-for (const pngPath of pngs) {
+for (let i = 0; i < pngs.length; i++) {
+	const pngPath = pngs[i];
 	const regionsPath = regionsPathFor(pngPath);
 	const pngHash = sha256(pngPath);
 	const pngName = path.basename(pngPath);
+	const relPng = relImages[i];
 
 	let status;
 	let regions = null;
@@ -150,7 +179,7 @@ for (const pngPath of pngs) {
 	}
 
 	console.log(
-		pngName.padEnd(40) +
+		relPng.padEnd(imageColWidth) +
 			status.padEnd(14) +
 			path.relative(process.cwd(), regionsPath)
 	);
